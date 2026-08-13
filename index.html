@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Công Cụ Xử Lý Đề Thi Markdown & LaTeX Toàn Diện</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Cấu hình và nạp thư viện MathJax để render Toán học -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            svg: { fontCache: 'global' },
+            startup: { typeset: false } // Tắt tự động render lúc mới tải trang để tối ưu hiệu năng
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <!-- Nạp thư viện SheetJS để xử lý dữ liệu Excel -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    
+    <!-- Nạp Font chữ -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #121316;
+            color: #e1e4e8;
+        }
+
+        .font-mono-code {
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* Sublime Text Monokai Theme Colors */
+        .sublime-bg { background-color: #272822; }
+        .sublime-gutter-bg {
+            background-color: #1e1f1c;
+            color: #75715e;
+        }
+        .sublime-topbar {
+            background-color: #1a1a17;
+            border-bottom: 1px solid #32332d;
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: #1e1f1c; }
+        ::-webkit-scrollbar-thumb {
+            background: #414339;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover { background: #57594d; }
+
+        /* Syntax Highlight Styles for Sublime Output */
+        .hl-question-prefix { color: #f92672; font-weight: bold; }
+        .hl-question-num { color: #fd971f; font-weight: bold; }
+        .hl-id-tag {
+            color: #a6e22e;
+            font-weight: bold;
+            background-color: rgba(166, 226, 46, 0.15);
+            padding: 1px 4px;
+            border-radius: 3px;
+            border: 1px solid rgba(166, 226, 46, 0.3);
+            cursor: help;
+        }
+        .hl-math { color: #66d9ef; }
+        .hl-option { color: #ae81ff; font-weight: 600; }
+        .hl-answer { color: #e6db74; font-weight: 600; }
+        .hl-header { color: #e6db74; font-weight: bold; }
+
+        /* Code line hover & active highlight */
+        .code-line {
+            line-height: 1.6rem;
+            min-height: 1.6rem;
+            white-space: pre-wrap;
+            word-break: break-word;
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+            transition: background-color 0.15s ease;
+            border-left: 2px solid transparent;
+        }
+        .code-line:hover {
+            background-color: #3e3d32;
+            cursor: pointer;
+            border-left-color: #a6e22e;
+        }
+        .code-line.active-line {
+            background-color: #49483e !important;
+            border-left-color: #f92672 !important;
+        }
+
+        /* Math Preview Styling */
+        #previewContainer {
+            font-family: 'Inter', sans-serif;
+            font-size: 15px;
+            line-height: 1.8;
+            color: #f8f8f2;
+        }
+        #previewContainer b { color: #a6e22e; }
+        .math-rendered-block {
+            padding: 1.5rem;
+            background-color: #272822;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between py-6 px-3 sm:px-6">
+
+    <div class="max-w-7xl w-full mx-auto space-y-5">
+        
+        <!-- Header Title -->
+        <div class="flex flex-col xl:flex-row xl:items-start justify-between gap-4 bg-gray-900 p-5 rounded-xl border border-gray-800 shadow-xl">
+            <div class="w-full xl:w-1/3">
+                <div class="flex items-center space-x-3">
+                    <span class="p-2 bg-pink-600/20 text-pink-500 rounded-lg font-mono-code font-bold text-xl">&lt;ID/&gt;</span>
+                    <h1 class="text-xl sm:text-2xl font-bold text-white tracking-wide">Xử lý Đề thi Thông minh</h1>
+                </div>
+                <p class="text-gray-400 text-xs sm:text-sm mt-2 leading-relaxed">
+                    Tạo ID, Chuẩn hóa, Lọc File LaTeX, Nhập Excel, Kiểm duyệt đề và Lưu Google Sheets tự động.
+                </p>
+                <div class="flex flex-wrap items-center gap-2 mt-3">
+                    <a href="https://soangiangvbm.vercel.app/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500/10 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/20 border border-indigo-500/30 rounded-md text-xs font-semibold transition-all w-fit shadow-sm">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                        Trang Soạn thảo Vũ Tiến Lực
+                    </a>
+                    <a href="https://quanlymd.vercel.app/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-md text-xs font-semibold transition-all w-fit shadow-sm">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                        Trang soạn ID
+                    </a>
+                </div>
+            </div>
+
+            <!-- Configuration Panels -->
+            <div class="flex flex-col gap-3 w-full xl:w-2/3">
+                <!-- Row 1: ID Format -->
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-gray-800/80 p-3 rounded-lg border border-gray-700">
+                    <div class="flex flex-col flex-1">
+                        <div class="flex items-center justify-between mb-1">
+                            <label for="idFormat" class="text-xs font-semibold text-gray-300">Định dạng ID chèn mặc định:</label>
+                            <button id="openIdBuilderBtn" class="text-[11px] text-pink-400 hover:text-pink-300 flex items-center gap-1.5 transition font-semibold bg-pink-500/10 px-2 py-0.5 rounded border border-pink-500/20 shadow-sm">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                                Trình tạo ID Ma Trận
+                            </button>
+                        </div>
+                        <input type="text" id="idFormat" value=' **[TO12.01.1.A01.a]**' 
+                            class="px-3 py-1.5 bg-gray-900 border border-gray-600 text-pink-400 font-mono-code text-xs sm:text-sm rounded focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none w-full"
+                            placeholder='Dùng {num} cho số câu. Xóa {num} để dùng ID tĩnh.'>
+                    </div>
+                    <button id="processBtn" class="mt-2 sm:mt-auto px-5 py-2.5 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold text-sm rounded shadow-lg transition duration-150 flex items-center justify-center space-x-2 whitespace-nowrap">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        <span>Cập nhật ID</span>
+                    </button>
+                </div>
+
+                <!-- Row 2: Advanced Rules & Replace -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                    <!-- Dynamic Ranges -->
+                    <div class="p-3 bg-gray-800/60 border border-gray-700 rounded-lg text-sm flex flex-col max-h-[160px] overflow-y-auto shadow-inner">
+                        <div class="flex items-center justify-between mb-2 sticky top-0 bg-gray-800 z-10 pb-1 border-b border-gray-700">
+                            <span class="text-xs font-semibold text-gray-300">Khoảng câu dùng ID khác:</span>
+                            <button id="addRangeBtn" class="text-xs bg-gray-700 hover:bg-gray-600 text-green-400 font-semibold px-2 py-1 rounded flex items-center gap-1 transition">
+                                <span>+ Thêm khoảng</span>
+                            </button>
+                        </div>
+                        <div id="rangeRulesContainer" class="space-y-2 flex-1"></div>
+                    </div>
+
+                    <!-- Replace & Toggles -->
+                    <div class="p-3 bg-gray-800/60 border border-gray-700 rounded-lg flex flex-col justify-between gap-2">
+                        <div class="flex flex-col gap-1.5">
+                            <span class="text-xs font-semibold text-gray-300">Tìm & Thay thế:</span>
+                            <div class="flex gap-2">
+                                <input type="text" id="findInput" placeholder="Tìm..." class="px-2 py-1.5 bg-gray-900 border border-gray-600 text-gray-200 text-xs rounded outline-none focus:ring-1 focus:ring-pink-500 flex-1 min-w-0">
+                                <input type="text" id="replaceInput" placeholder="Thay..." class="px-2 py-1.5 bg-gray-900 border border-gray-600 text-gray-200 text-xs rounded outline-none focus:ring-1 focus:ring-pink-500 flex-1 min-w-0">
+                                <button id="replaceActionBtn" class="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded shadow transition">Đổi</button>
+                            </div>
+                        </div>
+                        <div class="mt-2 pt-2 border-t border-gray-700 flex flex-col gap-1.5">
+                            <label class="flex items-center space-x-2 text-gray-300 cursor-pointer select-none">
+                                <input type="checkbox" id="removeEmptyLinesCb" class="rounded border-gray-600 bg-gray-900 text-pink-500 focus:ring-pink-500 w-4 h-4" checked>
+                                <span class="font-medium text-xs text-yellow-400">Ẩn dòng trống (Gọn kết quả)</span>
+                            </label>
+                            <label class="flex items-center space-x-2 text-gray-300 cursor-pointer select-none">
+                                <input type="checkbox" id="removeSolutionsCb" class="rounded border-gray-600 bg-gray-900 text-red-500 focus:ring-red-500 w-4 h-4">
+                                <span class="font-medium text-xs text-red-400">Xóa phần Lời giải / Hướng dẫn</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Row 3: Excel Import -->
+                <div class="p-3 bg-gray-800/80 border border-gray-700 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-inner">
+                    <div class="flex flex-col">
+                        <span class="text-xs font-semibold text-gray-300">Chèn Đáp án & Lời giải tự động:</span>
+                        <span class="text-[10px] text-gray-500 mt-0.5">Dùng Excel để ghép đáp án vào cuối mỗi câu.</span>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button id="downloadSampleExcelBtn" class="px-3 py-1.5 bg-green-700 hover:bg-green-600 text-white text-xs font-semibold rounded shadow transition flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            Mẫu Excel
+                        </button>
+                        <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="hidden">
+                        <button id="uploadExcelBtn" class="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 border border-gray-600 text-white text-xs font-semibold rounded shadow transition flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                            Nạp Excel
+                        </button>
+                        <button id="mergeExcelBtn" class="hidden px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded shadow transition flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                            Ghép vào Đề
+                        </button>
+                        <span id="excelStatus" class="text-xs text-yellow-400 font-mono-code truncate max-w-[120px]"></span>
+                    </div>
+                </div>
+
+                <!-- Row 4: Google Sheets Export -->
+                <div class="p-3 bg-gray-800/80 border border-gray-700 rounded-lg flex flex-col gap-3 shadow-inner border-l-4 border-l-green-500">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
+                        <div class="flex flex-col flex-1 w-full">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-semibold text-green-400">Đồng bộ dữ liệu lên Google Sheets (Tách riêng cột ID nếu có):</span>
+                                <button id="toggleGasHelpBtn" class="text-[11px] text-gray-400 hover:text-green-400 underline transition flex items-center gap-1">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    Hướng dẫn & Code Script
+                                </button>
+                            </div>
+                            <input type="text" id="gasUrlInput" placeholder="Nhập URL của Google Apps Script (Web App) vào đây..." class="px-2 py-1.5 mt-1.5 bg-gray-900 border border-gray-600 text-gray-200 text-xs rounded outline-none focus:ring-1 focus:ring-green-500 w-full font-mono-code">
+                        </div>
+                        <div class="flex items-center gap-2 mt-2 sm:mt-auto">
+                            <button id="exportSheetsBtn" class="px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-xs font-bold rounded shadow transition flex items-center gap-1 whitespace-nowrap">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                                Đồng bộ lên Sheets
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Expandable Help & Code Section -->
+                    <div id="gasHelpSection" class="hidden pt-3 mt-1 border-t border-gray-700 text-xs text-gray-300">
+                        <p class="mb-2 font-semibold text-gray-200">Hướng dẫn cài đặt nhanh API Google Sheets:</p>
+                        <ol class="list-decimal pl-4 mb-3 space-y-1.5 text-gray-400">
+                            <li>Mở file Google Sheets, trên thanh menu chọn <b>Tiện ích mở rộng</b> -> <b>Apps Script</b>.</li>
+                            <li>Xóa mã cũ, sao chép và dán toàn bộ đoạn mã bên dưới vào.</li>
+                            <li>Bấm <b>Triển khai (Deploy)</b> -> <b>Tùy chọn triển khai mới (New deployment)</b>.</li>
+                            <li>Chọn loại <b>Ứng dụng web (Web App)</b>, Quyền truy cập chọn <b>Bất kỳ ai (Anyone)</b> rồi bấm <b>Triển khai</b>.</li>
+                            <li>Copy URL Ứng dụng web và dán vào ô bên trên. <br><i class="text-yellow-500/80">Lưu ý quan trọng: Nếu bạn sửa đổi code này, khi lưu phải tạo "Phiên bản mới (New version)" thì URL mới nhận code mới.</i></li>
+                        </ol>
+                        <div class="relative mt-2">
+                            <div class="absolute top-1.5 right-1.5">
+                                <button id="copyGasCodeBtn" class="bg-gray-700 hover:bg-gray-600 border border-gray-600 text-white px-2 py-1 rounded text-[10px] shadow transition flex items-center gap-1">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                    Sao chép Code
+                                </button>
+                            </div>
+                            <pre class="bg-[#1e1f1c] p-3 rounded-lg overflow-x-auto text-[11px] leading-relaxed font-mono-code text-green-300 border border-gray-700 shadow-inner" id="gasCodeBlock">function doPost(e) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    // Tự động lấy Sheet đầu tiên
+    var sheet = ss.getSheets()[0]; 
+    
+    var data = JSON.parse(e.postData.contents); 
+    
+    var rows = [];
+    for (var i = 0; i < data.length; i++) {
+      rows.push([
+        data[i].id || "",       // Cột A: ID
+        data[i].content || ""   // Cột B: Toàn bộ nội dung gộp
+      ]);
+    }
+    
+    // Ghi dữ liệu vào dòng trống tiếp theo
+    if (rows.length > 0) {
+      sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({"status": "success"}))
+                         .setMimeType(ContentService.MimeType.JSON);
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({"status": "error", "message": error.toString()}))
+                         .setMimeType(ContentService.MimeType.JSON);
+  }
+}</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toolbar Ribbon -->
+        <div class="bg-gray-900/60 border border-gray-800 text-gray-300 px-4 py-2.5 rounded-lg text-xs flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center space-x-2 hidden md:flex">
+                <span class="inline-block w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                <span><b>Thanh công cụ nhanh</b></span>
+            </div>
+            <div class="flex flex-wrap items-center space-x-3 gap-y-2 w-full md:w-auto justify-end">
+                <button id="validateBtn" class="text-rose-400 hover:text-rose-300 hover:underline flex items-center gap-1 font-semibold" title="Kiểm tra thiếu đáp án, trùng câu...">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                    Kiểm duyệt Đề
+                </button>
+                <span class="text-gray-600">|</span>
+                <button id="reorderBtn" class="text-yellow-400 hover:text-yellow-300 hover:underline flex items-center gap-1 font-semibold">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"></path></svg>
+                    Đánh lại số câu
+                </button>
+                <span class="text-gray-600">|</span>
+                <button id="cleanMdBtn" class="text-orange-400 hover:text-orange-300 hover:underline flex items-center gap-1 font-semibold" title="Xóa định dạng Markdown thừa và tự động xuống dòng các đáp án">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>
+                    Làm sạch
+                </button>
+                <span class="text-gray-600">|</span>
+                <input type="file" id="texFileInput" accept=".tex" class="hidden">
+                <button id="uploadTexBtn" class="text-purple-400 hover:text-purple-300 hover:underline flex items-center gap-1 font-semibold">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    Nhập file .tex
+                </button>
+                
+                <span id="tikzDivider" class="hidden text-gray-600">|</span>
+                <button id="downloadTikzBtn" class="hidden text-emerald-400 hover:text-emerald-300 hover:underline flex items-center gap-1 font-semibold">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    Mã hình vẽ (TikZ)
+                </button>
+
+                <span class="text-gray-600">|</span>
+                <button id="sampleBtn" class="text-cyan-400 hover:underline flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                    Nạp mẫu
+                </button>
+                <span class="text-gray-600">|</span>
+                <button id="clearBtn" class="text-red-400 hover:underline flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    Xóa
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Editor Area (2 columns) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 items-stretch">
+            
+            <!-- LEFT EDITOR: Input Markdown -->
+            <div class="flex flex-col rounded-xl overflow-hidden border border-gray-800 shadow-xl bg-gray-900">
+                <div class="sublime-topbar px-4 py-2.5 flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <div class="flex space-x-1.5">
+                            <span class="w-3 h-3 rounded-full bg-gray-500/80"></span>
+                            <span class="w-3 h-3 rounded-full bg-gray-500/80"></span>
+                            <span class="w-3 h-3 rounded-full bg-gray-500/80"></span>
+                        </div>
+                        <span class="text-xs font-mono-code text-gray-300 ml-2">input_markdown.md</span>
+                    </div>
+                    <span id="inputStats" class="text-xs text-gray-500 font-mono-code">0 dòng</span>
+                </div>
+                <div class="relative flex-1 flex sublime-bg min-h-[480px] max-h-[600px] font-mono-code text-xs sm:text-sm overflow-hidden">
+                    <div id="inputGutter" class="sublime-gutter-bg select-none py-3 px-3 text-right border-r border-gray-800 overflow-hidden min-w-[3.5rem] leading-[1.6rem]">1</div>
+                    <div class="relative flex-1 h-full overflow-hidden flex">
+                        <textarea id="inputText" spellcheck="false" class="w-full h-full p-3 bg-transparent text-gray-200 outline-none resize-none leading-[1.6rem] relative z-10 font-mono-code" placeholder="Dán mã đề thi vào đây..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT EDITOR: Output Markdown & Preview -->
+            <div class="flex flex-col rounded-xl overflow-hidden border border-gray-800 shadow-2xl bg-gray-900">
+                <div class="sublime-topbar px-4 py-2.5 flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <div class="flex space-x-1.5">
+                            <span class="w-3 h-3 rounded-full bg-red-500/80"></span>
+                            <span class="w-3 h-3 rounded-full bg-yellow-500/80"></span>
+                            <span class="w-3 h-3 rounded-full bg-green-500/80"></span>
+                        </div>
+                        <span class="text-xs font-mono-code text-pink-400 ml-2">output_generated.md</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <span id="outputStats" class="text-xs text-gray-500 font-mono-code hidden sm:inline">0 dòng</span>
+                        
+                        <!-- VIEW TOGGLE -->
+                        <div class="bg-gray-800 rounded flex p-0.5 border border-gray-700">
+                            <button id="viewCodeBtn" class="px-2.5 py-1 text-xs font-semibold rounded bg-gray-600 text-white shadow-sm transition">Code</button>
+                            <button id="viewMathBtn" class="px-2.5 py-1 text-xs font-semibold rounded text-gray-400 hover:text-gray-200 transition">Xem Đề (Toán)</button>
+                        </div>
+
+                        <button id="copyBtn" class="px-2.5 py-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-200 rounded text-xs flex items-center space-x-1 transition">
+                            <svg class="w-3.5 h-3.5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            <span class="hidden sm:inline">Sao chép</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="relative flex-1 flex sublime-bg min-h-[480px] max-h-[600px] font-mono-code text-xs sm:text-sm overflow-hidden">
+                    <!-- Code View -->
+                    <div id="outputGutter" class="sublime-gutter-bg select-none py-3 px-3 text-right border-r border-gray-800 overflow-hidden min-w-[3.5rem] leading-[1.6rem]">1</div>
+                    <div id="outputContainer" class="flex-1 overflow-auto py-3 text-gray-200 select-text outline-none">
+                        <div class="px-4 text-gray-500 italic">Kết quả sẽ hiển thị ở đây...</div>
+                    </div>
+                    
+                    <!-- Math Preview View (Hidden by default) -->
+                    <div id="previewContainer" class="hidden flex-1 overflow-auto select-text math-rendered-block"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL KIỂM DUYỆT LỖI -->
+        <div id="validatorModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden z-50 flex items-center justify-center opacity-0 transition-opacity duration-300">
+            <div class="bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden transform scale-95 transition-transform duration-300 flex flex-col max-h-[80vh]">
+                <div class="px-5 py-4 border-b border-gray-800 flex justify-between items-center bg-gray-800/50">
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <svg class="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                        Báo cáo Kiểm duyệt Đề
+                    </h3>
+                    <button id="closeModalBtn" class="text-gray-400 hover:text-white transition">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <div id="validatorResults" class="p-5 overflow-y-auto flex-1 text-sm font-mono-code space-y-3"></div>
+                <div class="px-5 py-3 border-t border-gray-800 bg-gray-800/50 flex justify-end">
+                    <button id="closeModalBtn2" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded font-medium transition">Đóng</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL BỘ TẠO ID MA TRẬN -->
+        <div id="idBuilderModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden z-50 flex items-center justify-center opacity-0 transition-opacity duration-300">
+            <div class="bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden transform scale-95 transition-transform duration-300 flex flex-col">
+                <div class="px-5 py-4 border-b border-gray-800 flex justify-between items-center bg-gray-800/50">
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <svg class="w-5 h-5 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                        Tạo ID Ma Trận Chuẩn
+                    </h3>
+                    <button id="closeIdBuilderBtn" class="text-gray-400 hover:text-white transition">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <div class="p-5 overflow-y-auto space-y-4">
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <!-- Môn -->
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs font-semibold text-gray-400">0. Ký hiệu Môn</label>
+                            <input type="text" id="b_mon" value="TO" class="px-2 py-1.5 bg-gray-800 border border-gray-600 text-gray-200 text-sm rounded outline-none focus:ring-1 focus:ring-pink-500 font-mono-code uppercase">
+                        </div>
+                        <!-- Lớp -->
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs font-semibold text-gray-400">1. Lớp</label>
+                            <select id="b_lop" class="px-2 py-1.5 bg-gray-800 border border-gray-600 text-gray-200 text-sm rounded outline-none focus:ring-1 focus:ring-pink-500">
+                                <option value="12">Lớp 12</option>
+                                <option value="11">Lớp 11</option>
+                                <option value="10">Lớp 10</option>
+                                <option value="09">Lớp 9</option>
+                            </select>
+                        </div>
+                        <!-- Chương -->
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs font-semibold text-gray-400">2. Chương</label>
+                            <select id="b_chuong" class="px-2 py-1.5 bg-gray-800 border border-gray-600 text-gray-200 text-sm rounded outline-none focus:ring-1 focus:ring-pink-500"></select>
+                        </div>
+                        <!-- Bài -->
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs font-semibold text-gray-400">3. Bài</label>
+                            <select id="b_bai" class="px-2 py-1.5 bg-gray-800 border border-gray-600 text-gray-200 text-sm rounded outline-none focus:ring-1 focus:ring-pink-500"></select>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-gray-800 pt-4">
+                        <!-- Loại câu -->
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs font-semibold text-gray-400">4. Loại câu</label>
+                            <select id="b_loai" class="px-2 py-1.5 bg-gray-800 border border-gray-600 text-gray-200 text-sm rounded outline-none focus:ring-1 focus:ring-pink-500">
+                                <option value="A">A - Trắc nghiệm</option>
+                                <option value="F">F - Đúng/Sai</option>
+                                <option value="S">S - Trả lời ngắn</option>
+                                <option value="E">E - Tự luận</option>
+                                <option value="D">D - Mặc định</option>
+                            </select>
+                        </div>
+                        <!-- Dạng -->
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs font-semibold text-gray-400">5. Dạng Toán</label>
+                            <select id="b_dang" class="px-2 py-1.5 bg-gray-800 border border-gray-600 text-gray-200 text-sm rounded outline-none focus:ring-1 focus:ring-pink-500"></select>
+                        </div>
+                        <!-- Mức độ -->
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs font-semibold text-gray-400">6. Mức độ</label>
+                            <select id="b_mucdo" class="px-2 py-1.5 bg-gray-800 border border-gray-600 text-gray-200 text-sm rounded outline-none focus:ring-1 focus:ring-pink-500">
+                                <option value="a">a - Nhận biết (1)</option>
+                                <option value="b">b - Thông hiểu (2)</option>
+                                <option value="c">c - Vận dụng (3)</option>
+                                <option value="d">d - Vận dụng cao (4)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 p-4 bg-[#1e1f1c] rounded-lg border border-gray-700 text-center flex flex-col items-center justify-center gap-2 shadow-inner relative">
+                        <span class="text-gray-400 text-xs font-medium uppercase tracking-wider">Mã ID Sinh Ra:</span>
+                        <span id="b_preview" class="text-2xl font-mono-code font-bold text-green-400 tracking-wide">**[TO12.01.1.A01.a]**</span>
+                        <div class="mt-3 flex items-center justify-center">
+                            <label class="flex items-center space-x-2 text-gray-300 cursor-pointer select-none">
+                                <input type="checkbox" id="b_addNum" class="rounded border-gray-600 bg-gray-900 text-pink-500 focus:ring-pink-500 w-4 h-4">
+                                <span class="font-medium text-xs text-yellow-400">Thêm <code class="bg-gray-800 px-1 py-0.5 rounded text-pink-300">-{num}</code> vào cuối để phân biệt câu 1, 2, 3...</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="px-5 py-3 border-t border-gray-800 bg-gray-800/50 flex justify-end gap-3">
+                    <button id="cancelIdBuilderBtn" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded font-medium transition">Hủy</button>
+                    <button id="applyIdBuilderBtn" class="px-5 py-2 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white text-sm rounded font-bold shadow-lg transition flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        Áp dụng ID này
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification Toast -->
+        <div id="toastMessage" class="fixed bottom-6 right-6 px-4 py-3 rounded-xl bg-gray-800 border border-gray-700 shadow-2xl text-sm font-medium flex items-center space-x-2 transition-all duration-300 opacity-0 translate-y-5 pointer-events-none z-50">
+            <span id="toastIcon"></span>
+            <span id="toastText" class="text-gray-200"></span>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM Elements Setup
+            const inputText = document.getElementById('inputText');
+            const inputGutter = document.getElementById('inputGutter');
+            const outputContainer = document.getElementById('outputContainer');
+            const outputGutter = document.getElementById('outputGutter');
+            const idFormatInput = document.getElementById('idFormat');
+            
+            const addRangeBtn = document.getElementById('addRangeBtn');
+            const rangeRulesContainer = document.getElementById('rangeRulesContainer');
+            
+            const findInput = document.getElementById('findInput');
+            const replaceInput = document.getElementById('replaceInput');
+            const replaceActionBtn = document.getElementById('replaceActionBtn');
+            const removeEmptyLinesCb = document.getElementById('removeEmptyLinesCb');
+            const removeSolutionsCb = document.getElementById('removeSolutionsCb');
+            const reorderBtn = document.getElementById('reorderBtn');
+
+            const excelFileInput = document.getElementById('excelFileInput');
+            let excelDataDict = {}; 
+
+            const texFileInput = document.getElementById('texFileInput');
+            const downloadTikzBtn = document.getElementById('downloadTikzBtn');
+            const tikzDivider = document.getElementById('tikzDivider');
+            let extractedTikzData = "";
+
+            let rawOutputString = "";
+            let isPreviewMode = false;
+
+            const SAMPLE_TEXT = `TRƯỜNG THPT .................. – TỔ TOÁN
+ĐỀ KIỂM TRA: HỆ THỨC LƯỢNG TRONG TAM GIÁC
+Thời gian: 45 phút | Năm học: 2025 – 2026
+
+PHẦN I. Câu trắc nghiệm nhiều phương án lựa chọn
+Câu 1. [2H5H1-3] Cho tam giác $ABC$ có $BC=a, AC=b, AB=c$. Theo định lí sin trong tam giác, mệnh đề nào sau đây đúng?
+A. $\\dfrac{a}{\\sin A}=\\dfrac{b}{\\sin B}=\\dfrac{c}{\\sin C}=2R$
+B. $\\dfrac{a}{\\sin A}=\\dfrac{b}{\\sin B}=\\dfrac{c}{\\sin C}=R$
+C. $a\\sin A=b\\sin B=c\\sin C=2R$
+D. $\\dfrac{a}{\\cos A}=\\dfrac{b}{\\cos B}=\\dfrac{c}{\\cos C}=2R$
+Đáp án: A
+
+Câu 2. [2D1H3-1] Tam giác $ABC$ có $a=7, b=8, c=5$. Giá trị $\\cos A$ bằng:
+A. $0,5$
+B. $0,25$
+C. $-0,5$
+D. $1$
+Đáp án: A
+Lời giải
+Áp dụng định lí Cosin: $\\cos A=\\dfrac{b^2+c^2-a^2}{2bc}=0,5$.
+
+PHẦN II. Câu trắc nghiệm đúng sai
+Câu 3. [2H2H2-3] Cho tam giác $ABC$ có $a=13, b=14, c=15$.
+a) Nửa chu vi của tam giác là $p=21$.
+b) Diện tích tam giác bằng $84$.
+c) Bán kính đường tròn nội tiếp là $r=4$.
+d) Bán kính đường tròn ngoại tiếp là $R=8$.
+Đáp án: a, b, c
+
+PHẦN III. Câu trả lời ngắn
+Câu 4. [2H5N1-1] Tam giác $ABC$ vuông tại $A$ có $AB=6, AC=8$. Tính bán kính đường tròn ngoại tiếp.
+<Key=5>
+Lời giải
+$BC=\\sqrt{AB^2+AC^2}=10 \\Rightarrow R=5$.`;
+
+            function showToast(msg, type = 'success') {
+                const toastMessage = document.getElementById('toastMessage');
+                document.getElementById('toastText').textContent = msg;
+                if (type === 'success') {
+                    document.getElementById('toastIcon').innerHTML = `<svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
+                    toastMessage.className = "fixed bottom-6 right-6 px-4 py-3 rounded-xl bg-gray-800 border border-green-500/40 shadow-2xl text-sm font-medium flex items-center space-x-2 transition-all duration-300 opacity-100 translate-y-0 z-50";
+                } else if (type === 'warning') {
+                    document.getElementById('toastIcon').innerHTML = `<svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`;
+                    toastMessage.className = "fixed bottom-6 right-6 px-4 py-3 rounded-xl bg-gray-800 border border-yellow-500/40 shadow-2xl text-sm font-medium flex items-center space-x-2 transition-all duration-300 opacity-100 translate-y-0 z-50";
+                } else {
+                    document.getElementById('toastIcon').innerHTML = `<svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+                    toastMessage.className = "fixed bottom-6 right-6 px-4 py-3 rounded-xl bg-gray-800 border border-red-500/40 shadow-2xl text-sm font-medium flex items-center space-x-2 transition-all duration-300 opacity-100 translate-y-0 z-50";
+                }
+                setTimeout(() => {
+                    toastMessage.classList.add('opacity-0', 'translate-y-5');
+                    toastMessage.classList.remove('opacity-100', 'translate-y-0');
+                }, 2500);
+            }
+
+            function updateInputLineNumbers() {
+                const lines = inputText.value.split('\n');
+                let gutterHTML = '';
+                for (let i = 1; i <= lines.length; i++) { gutterHTML += `<div>${i}</div>`; }
+                inputGutter.innerHTML = gutterHTML;
+                document.getElementById('inputStats').textContent = `${lines.length} dòng`;
+            }
+
+            inputText.addEventListener('scroll', () => { inputGutter.scrollTop = inputText.scrollTop; });
+            outputContainer.addEventListener('scroll', () => { outputGutter.scrollTop = outputContainer.scrollTop; });
+
+            let typingTimer;
+            inputText.addEventListener('input', () => {
+                updateInputLineNumbers();
+                clearTimeout(typingTimer);
+                typingTimer = setTimeout(() => processText(false), 300);
+            });
+            idFormatInput.addEventListener('input', () => processText(false));
+
+            function escapeHtml(text) {
+                return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+            }
+
+            function buildSublimeHighlightedHtml(text, idFormat, isManual = false) {
+                const lines = text.split('\n');
+                let outputLinesHtml = [];
+                let rawProcessedLines = [];
+                
+                const isRemoveEmpty = removeEmptyLinesCb.checked;
+                const isRemoveSolutions = removeSolutionsCb.checked;
+                const rules = Array.from(document.querySelectorAll('.range-rule')).map(ruleEl => ({
+                    from: parseInt(ruleEl.querySelector('.rule-from').value, 10) || 1,
+                    to: parseInt(ruleEl.querySelector('.rule-to').value, 10) || 999,
+                    format: ruleEl.querySelector('.rule-format').value
+                }));
+
+                let outputIndex = 0;
+                let isSkippingSolution = false;
+
+                lines.forEach((lineText, index) => {
+                    let processedRawLine = lineText.trimEnd();
+
+                    if (isRemoveSolutions) {
+                        if (/^(Câu\s*\d+|PHẦN\s+[IVX]+|Bài\s*\d+)/i.test(processedRawLine)) isSkippingSolution = false;
+                        else if (/^(Lời giải|Hướng dẫn|HD giải|HD:)/i.test(processedRawLine.trim())) isSkippingSolution = true;
+                    }
+
+                    if (isSkippingSolution) return;
+                    if (isRemoveEmpty && processedRawLine.trim() === '') return;
+
+                    // Regex nhận diện "Câu X." và ID (có hỗ trợ **[ID]**)
+                    const questionRegex = /(Câu\s+)(\d+)([.:])(?:\s*(\*\*(?:%?\[[^\]]+\]|\{[^\}]+\})\*\*|%?\[[^\]]+\]|\{[^\}]+\}))?/gi;
+
+                    processedRawLine = processedRawLine.replace(questionRegex, (match, p1, p2, p3, p4) => {
+                        let num = parseInt(p2, 10);
+                        let currentFormat = idFormat;
+                        for(let r of rules) {
+                            if (num >= r.from && num <= r.to) { currentFormat = r.format; break; }
+                        }
+                        let customId = currentFormat.replace(/\{num\}/g, p2);
+                        
+                        if (p4) {
+                            if (!isManual) {
+                                return `${p1}${p2}${p3} ${p4.trim()}`;
+                            } else {
+                                return `${p1}${p2}${p3} ${customId}`;
+                            }
+                        }
+                        
+                        return `${p1}${p2}${p3} ${customId}`;
+                    });
+                    
+                    rawProcessedLines.push(processedRawLine);
+
+                    let lineHtml = escapeHtml(processedRawLine);
+                    // Highlighting Syntax
+                    lineHtml = lineHtml.replace(/\*\*\[.*?\]\*\*|\{id=&quot;.*?&quot;\}|\[ID.*?\]|%?\[[A-Z0-9-a-z]+\]/g, (match) => {
+                        let innerText = match.replace(/\*\*/g, '').replace(/%|\[|\]/g, '');
+                        // Parse logic for title
+                        let info = "Mã ID Câu hỏi";
+                        let m = innerText.match(/^([A-Z]+)(\d+)\.(\d+)\.(\d+)\.([A-Z])(\d+)\.([a-d])$/);
+                        if (m) {
+                            const mucdoMap = {'a': 'Nhận biết', 'b': 'Thông hiểu', 'c': 'Vận dụng', 'd': 'Vận dụng cao'};
+                            const loaiMap = {'A': 'Trắc nghiệm', 'F': 'Đúng/Sai', 'S': 'Trả lời ngắn', 'E': 'Tự luận', 'D': 'Mặc định'};
+                            info = `Môn ${m[1]} Lớp ${m[2]} - Chương ${m[3]} Bài ${m[4]}\nDạng: ${m[6]} - Loại: ${loaiMap[m[5]]||m[5]}\nMức độ: ${mucdoMap[m[7]]||m[7]}`;
+                        }
+                        return `<span class="hl-id-tag" title="${info}">${match}</span>`;
+                    });
+
+                    lineHtml = lineHtml.replace(/(Câu\s+)(\d+)([.:])/gi, (m, p1, p2, p3) => `<span class="hl-question-prefix">${p1}</span><span class="hl-question-num">${p2}</span><span class="hl-question-prefix">${p3}</span>`);
+                    lineHtml = lineHtml.replace(/(\$.*?\$)/g, '<span class="hl-math">$1</span>');
+                    lineHtml = lineHtml.replace(/^(\s*[a-zA-D]\.)|(\s*[a-d]\))/g, '<span class="hl-option">$&</span>');
+                    lineHtml = lineHtml.replace(/(Đáp án:|Lời giải|<Key=.*?>)/gi, '<span class="hl-answer">$1</span>');
+                    lineHtml = lineHtml.replace(/(PHẦN\s+[I|V|X]+.*?)/gi, '<span class="hl-header">$1</span>');
+
+                    const inputLineNumber = index + 1;
+                    outputIndex++;
+                    outputLinesHtml.push(`<div class="code-line" data-line-index="${inputLineNumber}" title="Chuyển tới dòng ${inputLineNumber}">${lineHtml || '&nbsp;'}</div>`);
+                });
+
+                rawOutputString = rawProcessedLines.join('\n');
+                return { html: outputLinesHtml.join(''), lineCount: outputIndex };
+            }
+
+            function processText(isManual = false) {
+                const text = inputText.value;
+                if (!text.trim()) {
+                    if (isManual) showToast('Vui lòng nhập nội dung Markdown!', 'error');
+                    outputContainer.innerHTML = '<div class="px-4 text-gray-500 italic">Chưa có nội dung...</div>';
+                    outputGutter.innerHTML = '<div>1</div>';
+                    document.getElementById('outputStats').textContent = '0 dòng';
+                    rawOutputString = '';
+                    if (isPreviewMode) document.getElementById('previewContainer').innerHTML = '';
+                    return;
+                }
+
+                const result = buildSublimeHighlightedHtml(text, idFormatInput.value, isManual);
+                outputContainer.innerHTML = result.html;
+
+                let gutterHTML = '';
+                for (let i = 1; i <= result.lineCount; i++) gutterHTML += `<div>${i}</div>`;
+                outputGutter.innerHTML = gutterHTML;
+                document.getElementById('outputStats').textContent = `${result.lineCount} dòng`;
+
+                outputContainer.querySelectorAll('.code-line').forEach(lineEl => {
+                    lineEl.addEventListener('click', () => {
+                        outputContainer.querySelectorAll('.code-line').forEach(el => el.classList.remove('active-line'));
+                        lineEl.classList.add('active-line');
+                        
+                        const lineIdx = parseInt(lineEl.getAttribute('data-line-index'), 10);
+                        const lines = inputText.value.split('\n');
+                        if (lineIdx > lines.length) return;
+                        
+                        let charIndex = 0;
+                        for (let i = 0; i < lineIdx - 1; i++) charIndex += lines[i].length + 1;
+                        
+                        inputText.focus();
+                        inputText.setSelectionRange(charIndex, charIndex + lines[lineIdx - 1].length);
+                        inputText.scrollTop = Math.max(0, (lineIdx - 1) * 25.6 - (inputText.clientHeight / 3));
+                        inputGutter.scrollTop = inputText.scrollTop;
+                    });
+                });
+
+                if (isManual) showToast('Đã cập nhật ID thành công!');
+                if (isPreviewMode) renderMathPreview();
+            }
+
+            function renderMathPreview() {
+                const pc = document.getElementById('previewContainer');
+                if (!rawOutputString.trim()) {
+                    pc.innerHTML = '<div class="text-gray-500 italic">Chưa có nội dung...</div>';
+                    return;
+                }
+                pc.innerHTML = '<div class="text-center text-gray-400 py-10 animate-pulse">Đang Render công thức...</div>';
+                setTimeout(() => {
+                    let htmlContent = rawOutputString
+                        .replace(/\n\n/g, '<br><br>')
+                        .replace(/\n/g, '<br>')
+                        .replace(/(Câu\s+\d+.*?[:.])/g, '<b>$1</b>')
+                        .replace(/(Đáp án:|Lời giải)/gi, '<b>$1</b>');
+                    pc.innerHTML = htmlContent;
+                    if (window.MathJax) {
+                        MathJax.typesetClear([pc]);
+                        MathJax.typesetPromise([pc]).catch(err => console.error('MathJax error:', err));
+                    }
+                }, 50);
+            }
+
+            document.getElementById('processBtn').addEventListener('click', () => processText(true));
+            removeEmptyLinesCb.addEventListener('change', () => processText(false));
+            removeSolutionsCb.addEventListener('change', () => processText(false));
+
+            document.getElementById('viewCodeBtn').addEventListener('click', function() {
+                if(!isPreviewMode) return;
+                isPreviewMode = false;
+                this.classList.replace('text-gray-400', 'text-white');
+                this.classList.add('bg-gray-600', 'shadow-sm');
+                document.getElementById('viewMathBtn').classList.replace('bg-gray-600', 'text-gray-400');
+                document.getElementById('viewMathBtn').classList.remove('text-white', 'shadow-sm');
+                
+                outputContainer.classList.remove('hidden');
+                outputGutter.classList.remove('hidden');
+                document.getElementById('previewContainer').classList.add('hidden');
+            });
+
+            document.getElementById('viewMathBtn').addEventListener('click', function() {
+                if(isPreviewMode) return;
+                isPreviewMode = true;
+                this.classList.replace('text-gray-400', 'text-white');
+                this.classList.add('bg-gray-600', 'shadow-sm');
+                document.getElementById('viewCodeBtn').classList.replace('bg-gray-600', 'text-gray-400');
+                document.getElementById('viewCodeBtn').classList.remove('text-white', 'shadow-sm');
+                
+                outputContainer.classList.add('hidden');
+                outputGutter.classList.add('hidden');
+                const pc = document.getElementById('previewContainer');
+                pc.classList.remove('hidden');
+                renderMathPreview();
+            });
+
+            document.getElementById('replaceActionBtn').addEventListener('click', () => {
+                const findVal = findInput.value, repVal = replaceInput.value;
+                if (!findVal) return showToast('Vui lòng nhập từ khóa!', 'error');
+                const newText = inputText.value.split(findVal).join(repVal);
+                if (inputText.value === newText) showToast('Không tìm thấy từ khóa!', 'error');
+                else {
+                    inputText.value = newText;
+                    updateInputLineNumbers();
+                    processText(false);
+                    showToast(`Đã thay thế "${findVal}" thành "${repVal}"!`);
+                }
+            });
+
+            reorderBtn.addEventListener('click', () => {
+                if (!inputText.value.trim()) return showToast('Không có nội dung!', 'error');
+                let counter = 1;
+                inputText.value = inputText.value.replace(/(Câu\s+)(\d+)([.:])/gi, (m, p1, p2, p3) => `${p1}${counter++}${p3}`);
+                updateInputLineNumbers();
+                processText(false);
+                showToast('Đã chuẩn hóa thứ tự câu thành công!');
+            });
+
+            document.getElementById('cleanMdBtn').addEventListener('click', () => {
+                let text = inputText.value;
+                if (!text.trim()) return showToast('Không có nội dung!', 'error');
+
+                text = text.replace(/^#+\s+/gm, '');
+                text = text.replace(/\*\*(.*?)\*\*/g, '$1');
+                text = text.replace(/__(.*?)__/g, '$1');
+                text = text.replace(/(^|\s)\*(?!\s)(.*?)(?<!\s)\*($|\s)/g, '$1$2$3');
+                text = text.replace(/<\/?(b|strong|i|em)>/gi, '');
+                text = text.replace(/([^\n])\s+(A\.|B\.|C\.|D\.)(?=\s|\$)/g, '$1\n$2');
+                text = text.replace(/([^\n])\s+(a\)|b\)|c\)|d\))(?=\s|\$)/g, '$1\n$2');
+                text = text.replace(/\n{3,}/g, '\n\n');
+
+                inputText.value = text;
+                updateInputLineNumbers();
+                processText(false);
+                showToast('Đã làm sạch mã Markdown và tách dòng đáp án!');
+            });
+
+            addRangeBtn.addEventListener('click', () => {
+                const ruleDiv = document.createElement('div');
+                ruleDiv.className = 'range-rule flex items-center gap-1.5 bg-gray-900 p-1.5 rounded border border-gray-700 mt-1';
+                ruleDiv.innerHTML = `
+                    <span class="text-gray-400 text-xs">Từ:</span>
+                    <input type="number" class="rule-from w-12 sm:w-14 px-1 py-1 bg-gray-800 border border-gray-600 text-gray-200 text-xs rounded outline-none" value="1">
+                    <span class="text-gray-400 text-xs">Đến:</span>
+                    <input type="number" class="rule-to w-12 sm:w-14 px-1 py-1 bg-gray-800 border border-gray-600 text-gray-200 text-xs rounded outline-none" value="5">
+                    <input type="text" class="rule-format flex-1 min-w-[60px] px-1.5 py-1 bg-gray-800 border text-cyan-400 font-mono-code text-xs rounded outline-none" value=' **[TO12.01.1.A01.a]**'>
+                    <button class="rule-delete text-red-400 hover:text-red-300 text-xs p-1 bg-gray-800 rounded transition"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                `;
+                ruleDiv.querySelector('.rule-delete').addEventListener('click', () => { ruleDiv.remove(); processText(false); });
+                ruleDiv.querySelectorAll('input').forEach(input => input.addEventListener('input', () => processText(false)));
+                rangeRulesContainer.appendChild(ruleDiv);
+                processText(false);
+            });
+
+            document.getElementById('downloadSampleExcelBtn').addEventListener('click', () => {
+                const ws_data = [
+                    ["Câu", "Đáp án", "Lời giải"],
+                    [1, "A", "Theo định lí sin, ta có tỉ số a/sinA = 2R."],
+                    [2, "A", "Áp dụng định lí cosin: cosA = (b^2+c^2-a^2)/(2bc)."],
+                    [3, "a, b, c", "p=21. S=84. r=4. R=8,125 khác 8."],
+                    [4, "5", "BC = sqrt(36+64) = 10. R = BC/2 = 5."]
+                ];
+                const ws = XLSX.utils.aoa_to_sheet(ws_data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Dap_An");
+                XLSX.writeFile(wb, "Mau_Dap_An.xlsx");
+                showToast('Đã tải xuống file Excel mẫu!');
+            });
+
+            document.getElementById('uploadExcelBtn').addEventListener('click', () => excelFileInput.click());
+            excelFileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if(!file) return;
+                const status = document.getElementById('excelStatus');
+                status.textContent = "Đang đọc...";
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    try {
+                        const workbook = XLSX.read(evt.target.result, { type: 'array' });
+                        const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                        excelDataDict = {};
+                        let count = 0;
+                        json.forEach(row => {
+                            const qKey = row["Câu"] || row["Câu hỏi"] || row["Question"];
+                            if (qKey !== undefined) {
+                                const match = String(qKey).match(/\d+/);
+                                if (match) {
+                                    excelDataDict[parseInt(match[0], 10)] = {
+                                        answer: row["Đáp án"] || row["Answer"] || "",
+                                        solution: row["Lời giải"] || row["Solution"] || ""
+                                    };
+                                    count++;
+                                }
+                            }
+                        });
+                        if (count > 0) {
+                            status.textContent = `Nạp ${count} câu`;
+                            status.classList.replace('text-yellow-400', 'text-green-400');
+                            document.getElementById('mergeExcelBtn').classList.remove('hidden');
+                            showToast(`Đã đọc ${count} câu từ Excel!`);
+                        } else {
+                            status.textContent = "Lỗi dữ liệu";
+                            showToast("Không tìm thấy cột 'Câu'!", "error");
+                        }
+                    } catch (err) { status.textContent = "Lỗi file"; showToast("Lỗi đọc Excel!", "error"); }
+                };
+                reader.readAsArrayBuffer(file);
+                e.target.value = '';
+            });
+
+            document.getElementById('mergeExcelBtn').addEventListener('click', () => {
+                let lines = inputText.value.split('\n');
+                let resultLines = [], currentQuestionNum = null, currentBlockLines = [];
+                
+                const flushBlock = () => {
+                    if (currentQuestionNum !== null && excelDataDict[currentQuestionNum]) {
+                        const exData = excelDataDict[currentQuestionNum];
+                        const hasAnswer = currentBlockLines.some(l => /^Đáp án:/i.test(l.trim()));
+                        const hasSolution = currentBlockLines.some(l => /^Lời giải|^Hướng dẫn/i.test(l.trim()));
+
+                        while(currentBlockLines.length > 0 && currentBlockLines[currentBlockLines.length - 1].trim() === "") currentBlockLines.pop();
+                        if (exData.answer && !hasAnswer) currentBlockLines.push(`Đáp án: ${exData.answer}`);
+                        if (exData.solution && !hasSolution) currentBlockLines.push(`Lời giải\n${exData.solution}`);
+                        currentBlockLines.push("");
+                    }
+                    resultLines = resultLines.concat(currentBlockLines);
+                    currentBlockLines = [];
+                };
+
+                for (let line of lines) {
+                    let matchQuestion = line.match(/^(Câu\s+)(\d+)[.:\s]/i);
+                    let matchSection = line.match(/^(PHẦN\s+[IVX]+|Bài\s+\d+)/i);
+
+                    if (matchQuestion) {
+                        flushBlock();
+                        currentQuestionNum = parseInt(matchQuestion[2], 10);
+                        currentBlockLines.push(line);
+                    } else if (matchSection) {
+                        flushBlock();
+                        currentQuestionNum = null;
+                        currentBlockLines.push(line);
+                    } else {
+                        currentBlockLines.push(line);
+                    }
+                }
+                flushBlock();
+                inputText.value = resultLines.join('\n');
+                updateInputLineNumbers();
+                processText(false);
+                showToast('Đã chèn Đáp án & Lời giải thành công!');
+            });
+
+            function extractLatexCommand(text, commandName, numArgs) {
+                let regex = new RegExp("\\\\" + commandName + "(?:\\s*|\\[.*?\\])*\\{"); 
+                let match = text.match(regex);
+                if (!match) return null;
+
+                let startIndex = match.index;
+                let args = [];
+                let currIndex = startIndex + match[0].length - 1;
+
+                for (let i = 0; i < numArgs; i++) {
+                    while (currIndex < text.length && text[currIndex] !== '{') currIndex++;
+                    if (currIndex >= text.length) break;
+
+                    let bracketCount = 1;
+                    let argStart = currIndex + 1;
+                    currIndex++;
+
+                    while (currIndex < text.length && bracketCount > 0) {
+                        if (text[currIndex] === '{' && text[currIndex-1] !== '\\') bracketCount++;
+                        else if (text[currIndex] === '}' && text[currIndex-1] !== '\\') bracketCount--;
+                        currIndex++;
+                    }
+                    args.push(text.substring(argStart, currIndex - 1));
+                }
+                return { args: args, fullMatch: text.substring(startIndex, currIndex) };
+            }
+
+            document.getElementById('uploadTexBtn').addEventListener('click', () => texFileInput.click());
+            texFileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    try {
+                        let texContent = evt.target.result;
+                        let resultMarkdown = "", questionCounter = 1;
+                        extractedTikzData = "";
+                        
+                        // Keep ID comments %[], remove others
+                        texContent = texContent.replace(/%(?!\[[A-Za-z0-9-]+\]).*$/gm, '');
+
+                        const envRegex = /\\begin\{(ex|bt)\}(?:%?(\[.*?\]))?([\s\S]*?)\\end\{\1\}/g;
+                        let match;
+                        
+                        while ((match = envRegex.exec(texContent)) !== null) {
+                            let questionId = match[2] ? match[2] : ""; 
+                            let blockContent = match[3];
+
+                            // Extract TikZ including pre-setup commands
+                            let tikzRegex = /(?:\\tdplotsetmaincoords\{[^\}]*\}\{[^\}]*\}\s*|\\def\s*\\[a-zA-Z]+\s*\{[^\}]*\}\s*)?\\begin\{tikzpicture\}[\s\S]*?\\end\{tikzpicture\}/g;
+                            let tikzMatches = blockContent.match(tikzRegex);
+                            if (tikzMatches) {
+                                tikzMatches.forEach((tikz, idx) => {
+                                    extractedTikzData += `% --- HÌNH VẼ CÂU ${questionCounter} ${idx > 0 ? `(Hình ${idx + 1})` : ''} ---\n${tikz}\n\n`;
+                                });
+                            }
+                            
+                            // Remove graphics code from block
+                            blockContent = blockContent.replace(tikzRegex, '');
+                            blockContent = blockContent.replace(/\\begin\{center\}[\s\S]*?\\end\{center\}/g, '');
+                            
+                            let immini;
+                            while ((immini = extractLatexCommand(blockContent, 'immini', 2)) !== null) {
+                                blockContent = blockContent.replace(immini.fullMatch, immini.args[0]);
+                            }
+
+                            let optionsText = "", answerText = "", solutionText = "";
+
+                            let choice = extractLatexCommand(blockContent, 'choice', 4);
+                            if (choice) {
+                                blockContent = blockContent.replace(choice.fullMatch, '');
+                                let opts = choice.args, correctIdx = -1;
+                                for (let i = 0; i < 4; i++) {
+                                    if (opts[i].includes('\\True')) { correctIdx = i; opts[i] = opts[i].replace(/\\True\s*/g, ''); }
+                                    opts[i] = opts[i].trim();
+                                }
+                                optionsText = `A. ${opts[0]}\nB. ${opts[1]}\nC. ${opts[2]}\nD. ${opts[3]}`;
+                                if (correctIdx !== -1) answerText = `Đáp án: ${String.fromCharCode(65 + correctIdx)}`;
+                            }
+
+                            let choiceTF = extractLatexCommand(blockContent, 'choiceTF', 4);
+                            if (choiceTF) {
+                                blockContent = blockContent.replace(choiceTF.fullMatch, '');
+                                let opts = choiceTF.args, correctLabels = [];
+                                for (let i = 0; i < 4; i++) {
+                                    if (opts[i].includes('\\True')) { correctLabels.push(['a','b','c','d'][i]); opts[i] = opts[i].replace(/\\True\s*/g, ''); }
+                                    opts[i] = opts[i].trim();
+                                }
+                                optionsText = `a) ${opts[0]}\nb) ${opts[1]}\nc) ${opts[2]}\nd) ${opts[3]}`;
+                                if (correctLabels.length > 0) answerText = `Đáp án: ${correctLabels.join(', ')}`;
+                            }
+
+                            let shortans = extractLatexCommand(blockContent, 'shortans', 1);
+                            if (shortans) { blockContent = blockContent.replace(shortans.fullMatch, ''); answerText = `<Key=${shortans.args[0].trim()}>`; }
+
+                            let loigiai = extractLatexCommand(blockContent, 'loigiai', 1);
+                            if (loigiai) {
+                                blockContent = blockContent.replace(loigiai.fullMatch, '');
+                                let cleanSol = loigiai.args[0].trim();
+                                cleanSol = cleanSol.replace(/\\begin\{itemchoice\}/g, '').replace(/\\end\{itemchoice\}/g, '').replace(/\\itemch\s*/g, '');
+                                cleanSol = cleanSol.replace(/\\textbf\{Đúng\}[\.\s]*/g, '').replace(/\\textbf\{Sai\}[\.\s]*/g, '');
+                                solutionText = `Lời giải\n${cleanSol.trim()}`;
+                            }
+
+                            let finalBlock = `Câu ${questionCounter}.${questionId ? ' ' + questionId : ''} ${blockContent.trim().replace(/\n{3,}/g, '\n\n')}`;
+                            if (optionsText) finalBlock += `\n${optionsText}`;
+                            if (answerText) finalBlock += `\n${answerText}`;
+                            if (solutionText) finalBlock += `\n${solutionText}`;
+
+                            resultMarkdown += finalBlock + "\n\n";
+                            questionCounter++;
+                        }
+
+                        if (extractedTikzData.trim() !== "") {
+                            downloadTikzBtn.classList.remove('hidden'); tikzDivider.classList.remove('hidden');
+                        } else {
+                            downloadTikzBtn.classList.add('hidden'); tikzDivider.classList.add('hidden');
+                        }
+
+                        if (resultMarkdown.trim() === "") showToast("Không tìm thấy môi trường ex, bt trong file!", "error");
+                        else {
+                            inputText.value = resultMarkdown.trim();
+                            updateInputLineNumbers();
+                            processText(false); // ID will be kept due to logic in buildSublimeHighlightedHtml
+                            showToast(`Đã lọc thành công ${questionCounter - 1} câu hỏi từ LaTeX!`);
+                        }
+                    } catch (error) { console.error(error); showToast("Lỗi bóc tách file LaTeX!", "error"); }
+                };
+                reader.readAsText(file); e.target.value = '';
+            });
+
+            document.getElementById('downloadTikzBtn').addEventListener('click', () => {
+                if (!extractedTikzData.trim()) return;
+                
+                const latexHeader = `\\documentclass[12pt,a4paper]{article}
+\\usepackage[utf8]{vietnam}
+\\usepackage{amsmath,amssymb}
+\\usepackage{tikz,tkz-euclide,tkz-tab}
+\\usetikzlibrary{angles,intersections,shapes.geometric,arrows,decorations.markings,arrows.meta,patterns.meta,shadows.blur,patterns,quotes,bending,matrix}
+\\usepackage{tikz-3dplot}
+\\begin{document}\n\n`;
+                const latexFooter = `\n\\end{document}`;
+                
+                const fullTexContent = latexHeader + extractedTikzData + latexFooter;
+                
+                const blob = new Blob([fullTexContent], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); 
+                a.href = url; 
+                a.download = 'Ma_Hinh_Ve_Day_Du.tex';
+                document.body.appendChild(a); 
+                a.click(); 
+                document.body.removeChild(a); 
+                URL.revokeObjectURL(url);
+                showToast('Đã tải xuống mã hình vẽ (TikZ) đầy đủ!');
+            });
+
+            const validatorModal = document.getElementById('validatorModal');
+            const closeValidator = () => {
+                validatorModal.classList.add('opacity-0');
+                validatorModal.firstElementChild.classList.add('scale-95');
+                setTimeout(() => validatorModal.classList.add('hidden'), 300);
+            }
+            document.getElementById('closeModalBtn').addEventListener('click', closeValidator);
+            document.getElementById('closeModalBtn2').addEventListener('click', closeValidator);
+            
+            document.getElementById('validateBtn').addEventListener('click', () => {
+                const text = inputText.value;
+                if (!text.trim()) return showToast('Không có nội dung để kiểm duyệt!', 'error');
+
+                const resDiv = document.getElementById('validatorResults');
+                resDiv.innerHTML = '<div class="text-center text-gray-400 py-5">Đang quét dữ liệu...</div>';
+                validatorModal.classList.remove('hidden');
+                setTimeout(() => { validatorModal.classList.remove('opacity-0'); validatorModal.firstElementChild.classList.remove('scale-95'); }, 10);
+
+                setTimeout(() => {
+                    let errors = [], warnings = [], qNumbers = [], totalQuestions = 0;
+                    const blocks = text.split(/(?=(?:^|\n)Câu\s+\d+[.:])/i);
+
+                    blocks.forEach(block => {
+                        if (!block.trim()) return;
+                        const match = block.match(/Câu\s+(\d+)[.:]/i);
+                        if (!match) return;
+                        
+                        totalQuestions++;
+                        const num = parseInt(match[1]);
+
+                        if (qNumbers.includes(num)) errors.push(`<span class="text-red-400">Câu ${num}:</span> Bị lặp số thứ tự.`);
+                        qNumbers.push(num);
+
+                        if (!/(Đáp án:|<Key=.*?>)/i.test(block)) errors.push(`<span class="text-red-400">Câu ${num}:</span> Thiếu phần <b>Đáp án</b>`);
+                        if (!/(Lời giải|Hướng dẫn|HD:)/i.test(block)) warnings.push(`<span class="text-yellow-400">Câu ${num}:</span> Chưa có <b>Lời giải</b>.`);
+
+                        if (/^\s*A\./m.test(block) && (!/^\s*B\./m.test(block) || !/^\s*C\./m.test(block) || !/^\s*D\./m.test(block))) {
+                            errors.push(`<span class="text-orange-400">Câu ${num}:</span> Trắc nghiệm bị khuyết phương án (Có A nhưng thiếu B, C, D).`);
+                        }
+                    });
+
+                    let htmlResult = `<div class="mb-4 text-green-400 font-bold border-b border-gray-700 pb-2">Đã quét ${totalQuestions} câu hỏi.</div>`;
+                    if (!errors.length && !warnings.length) {
+                        htmlResult += `<div class="p-4 bg-green-900/30 border border-green-800 rounded flex items-center gap-3 text-green-400">Tuỵệt vời! Không phát hiện lỗi logic nào.</div>`;
+                    } else {
+                        if (errors.length) htmlResult += `<div class="text-red-400 font-bold mb-2 uppercase text-xs">Lỗi nghiêm trọng (${errors.length})</div><ul class="list-disc pl-5 space-y-1 mb-4">${errors.map(e => `<li>${e}</li>`).join('')}</ul>`;
+                        if (warnings.length) htmlResult += `<div class="text-yellow-400 font-bold mb-2 uppercase text-xs">Cảnh báo (${warnings.length})</div><ul class="list-disc pl-5 space-y-1">${warnings.map(w => `<li>${w}</li>`).join('')}</ul>`;
+                    }
+                    resDiv.innerHTML = htmlResult;
+                }, 400);
+            });
+
+            document.getElementById('exportSheetsBtn').addEventListener('click', async () => {
+                const text = rawOutputString || inputText.value; 
+                const url = document.getElementById('gasUrlInput').value.trim();
+
+                if (!text.trim()) return showToast('Không có nội dung để đồng bộ!', 'error');
+                if (!url) {
+                    document.getElementById('gasUrlInput').focus();
+                    return showToast('Vui lòng nhập URL của Google Apps Script!', 'error');
+                }
+
+                try { new URL(url); } catch (e) {
+                    document.getElementById('gasUrlInput').focus();
+                    return showToast('URL Google Apps Script không hợp lệ!', 'error');
+                }
+
+                const btn = document.getElementById('exportSheetsBtn');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Đang lưu...`;
+                btn.disabled = true;
+                btn.classList.add('opacity-75');
+
+                try {
+                    let cleanText = text.replace(/^[ \t]+/gm, ''); 
+                    const blocks = cleanText.split(/(?=(?:^|\n)Câu\s+\d+[.:])/i).filter(b => b.trim());
+                    const parsedData = [];
+
+                    blocks.forEach(block => {
+                        let combinedContent = block.trim();
+                        if (!/^Câu\s+\d+[.:]/i.test(combinedContent)) return;
+
+                        let questionId = "";
+                        const idRegex = /^(Câu\s+\d+[.:])\s*(\*\*(?:%?\[[^\]]+\]|\{[^\}]+\})\*\*|%?\[[^\]]+\]|\{[^\}]+\})/;
+                        const idMatch = combinedContent.match(idRegex);
+                        
+                        if (idMatch) {
+                            questionId = idMatch[2];
+                            combinedContent = combinedContent.replace(idMatch[0], idMatch[1] + " ").trim();
+                        }
+
+                        combinedContent = combinedContent.replace(/\n{3,}/g, '\n\n');
+
+                        parsedData.push({
+                            id: questionId,
+                            content: combinedContent
+                        });
+                    });
+
+                    if(parsedData.length === 0) {
+                        throw new Error("Không tìm thấy câu hỏi nào hợp lệ để đồng bộ.");
+                    }
+
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify(parsedData)
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result && result.status === 'success') {
+                        showToast(`Đã đồng bộ ${parsedData.length} câu lên Sheets thành công!`);
+                    } else {
+                        throw new Error("Lỗi từ Sheets: " + (result.message || "Không rõ nguyên nhân"));
+                    }
+
+                } catch (error) {
+                    console.error(error);
+                    showToast(error.message || 'Lỗi mạng hoặc URL không chính xác!', 'error');
+                } finally {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-75');
+                }
+            });
+
+            document.getElementById('copyBtn').addEventListener('click', () => {
+                if (!rawOutputString) return showToast('Không có nội dung!', 'error');
+                const t = document.createElement('textarea'); t.value = rawOutputString;
+                document.body.appendChild(t); t.select();
+                document.execCommand('copy') ? showToast('Đã sao chép kết quả!') : showToast('Lỗi sao chép!', 'error');
+                document.body.removeChild(t);
+            });
+
+            document.getElementById('clearBtn').addEventListener('click', () => {
+                inputText.value = ''; rawOutputString = '';
+                updateInputLineNumbers(); processText(false);
+                showToast('Đã xóa dữ liệu.');
+            });
+
+            document.getElementById('sampleBtn').addEventListener('click', () => {
+                inputText.value = SAMPLE_TEXT; updateInputLineNumbers(); processText(false); showToast('Đã nạp mẫu thành công!');
+            });
+
+            document.getElementById('toggleGasHelpBtn').addEventListener('click', function() {
+                const helpSection = document.getElementById('gasHelpSection');
+                helpSection.classList.toggle('hidden');
+                this.classList.toggle('text-green-400');
+            });
+
+            document.getElementById('copyGasCodeBtn').addEventListener('click', function() {
+                const codeText = document.getElementById('gasCodeBlock').innerText;
+                const t = document.createElement('textarea'); 
+                t.value = codeText;
+                document.body.appendChild(t); 
+                t.select();
+                document.execCommand('copy') ? showToast('Đã sao chép mã Apps Script!') : showToast('Lỗi sao chép!', 'error');
+                document.body.removeChild(t);
+            });
+
+            const idBuilderModal = document.getElementById('idBuilderModal');
+            const b_chuong = document.getElementById('b_chuong');
+            const b_bai = document.getElementById('b_bai');
+            const b_dang = document.getElementById('b_dang');
+
+            for(let i=1; i<=15; i++) {
+                const val = i.toString().padStart(2, '0');
+                b_chuong.innerHTML += `<option value="${val}">Chương ${val}</option>`;
+            }
+            for(let i=1; i<=20; i++) {
+                b_bai.innerHTML += `<option value="${i}">Bài ${i}</option>`;
+            }
+            for(let i=1; i<=30; i++) {
+                const val = i.toString().padStart(2, '0');
+                b_dang.innerHTML += `<option value="${val}">Dạng ${val}</option>`;
+            }
+
+            const updateIdPreview = () => {
+                const mon = document.getElementById('b_mon').value.trim().toUpperCase() || 'TO';
+                const lop = document.getElementById('b_lop').value;
+                const chuong = document.getElementById('b_chuong').value;
+                const bai = document.getElementById('b_bai').value;
+                const loai = document.getElementById('b_loai').value;
+                const dang = document.getElementById('b_dang').value;
+                const mucdo = document.getElementById('b_mucdo').value;
+                const addNum = document.getElementById('b_addNum').checked;
+                
+                let previewStr = `**[${mon}${lop}.${chuong}.${bai}.${loai}${dang}.${mucdo}`;
+                if (addNum) previewStr += `-{num}`;
+                previewStr += `]**`;
+                
+                document.getElementById('b_preview').textContent = previewStr;
+            };
+
+            ['b_mon', 'b_lop', 'b_chuong', 'b_bai', 'b_loai', 'b_dang', 'b_mucdo', 'b_addNum'].forEach(id => {
+                document.getElementById(id).addEventListener('input', updateIdPreview);
+                document.getElementById(id).addEventListener('change', updateIdPreview);
+            });
+
+            const closeIdBuilder = () => {
+                idBuilderModal.classList.add('opacity-0');
+                idBuilderModal.firstElementChild.classList.add('scale-95');
+                setTimeout(() => idBuilderModal.classList.add('hidden'), 300);
+            };
+
+            document.getElementById('openIdBuilderBtn').addEventListener('click', () => {
+                updateIdPreview(); 
+                idBuilderModal.classList.remove('hidden');
+                setTimeout(() => { 
+                    idBuilderModal.classList.remove('opacity-0'); 
+                    idBuilderModal.firstElementChild.classList.remove('scale-95'); 
+                }, 10);
+            });
+
+            document.getElementById('closeIdBuilderBtn').addEventListener('click', closeIdBuilder);
+            document.getElementById('cancelIdBuilderBtn').addEventListener('click', closeIdBuilder);
+
+            document.getElementById('applyIdBuilderBtn').addEventListener('click', () => {
+                idFormatInput.value = ' ' + document.getElementById('b_preview').textContent;
+                closeIdBuilder();
+                processText(false);
+                showToast('Đã áp dụng định dạng ID Ma trận!');
+            });
+
+            // Init
+            inputText.value = SAMPLE_TEXT;
+            updateInputLineNumbers();
+            processText(false);
+        });
+    </script>
+</body>
+</html>
